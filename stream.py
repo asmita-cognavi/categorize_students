@@ -396,9 +396,13 @@ def create_distribution_plot(df):
         labels={'x': 'Category', 'y': 'Number of Students'},
         color=category_counts.index,  # This maps colors to categories
         color_discrete_sequence=px.colors.qualitative.Set3,  # Use Set3 color palette
+        text=category_counts.values
+
     )
     
     fig.update_traces(
+        textposition='auto',
+        textfont=dict(size=20),
         hovertemplate='Number of Students: %{y}<extra></extra>'  # Only show number of students
     )
     return fig
@@ -614,6 +618,9 @@ def main():
                 go.Bar(
                     x=[category],
                     y=[avg_scores_by_category[category]],
+                    text=[f"{avg_scores_by_category[category]:.2f}"],
+                    textposition='auto',  # Automatically position text
+                    textfont=dict(size=20),
                     name=category,
                     marker=dict(color=colors[i % len(colors)])
                 )
