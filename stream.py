@@ -41,7 +41,7 @@ def calculate_score(project_count: int, hard_skills_count: int, work_exp_count: 
     # 1. Projects (25%)
     if project_count >= 2:
         scores['project_score'] = 25
-        bonus_scores['project_bonus'] = 10 if project_count > 2 else 0
+        bonus_scores['project_bonus'] = 5 if project_count > 2 else 0
     elif project_count == 1:
         scores['project_score'] = 15
         bonus_scores['project_bonus'] = 0
@@ -62,7 +62,7 @@ def calculate_score(project_count: int, hard_skills_count: int, work_exp_count: 
     # 3. Work Experience (20%)
     if work_exp_count >= 2:
         scores['work_exp_score'] = 20
-        bonus_scores['work_exp_bonus'] = 10 if work_exp_count > 2 else 0
+        bonus_scores['work_exp_bonus'] = 5 if work_exp_count > 2 else 0
     elif work_exp_count == 1:
         scores['work_exp_score'] = 15
         bonus_scores['work_exp_bonus'] = 0
@@ -111,7 +111,7 @@ def calculate_score(project_count: int, hard_skills_count: int, work_exp_count: 
     scores['base_total'] = sum(scores.values())
     bonus_scores['bonus_total'] = sum(bonus_scores.values())
     total_score = scores['base_total'] + bonus_scores['bonus_total']
-    
+    percentage=(total_score/115)*100
     # Determine category
     if total_score >= 100:
         category = "C1"
@@ -128,7 +128,8 @@ def calculate_score(project_count: int, hard_skills_count: int, work_exp_count: 
         'base_scores': scores,
         'bonus_scores': bonus_scores,
         'total_score': total_score,
-        'category': category
+        'category': category,
+        'percentage':percentage
     }
 
 def process_student_chunk(students: List[Dict]) -> List[Dict]:
@@ -209,7 +210,7 @@ def get_pipeline(batch_size: int, skip: int = 0):
                 "source_bonus": {
                     "$cond": [
                         {"$eq": ["$source", "coresignal"]},
-                        10,
+                        5,
                         0
                     ]
                 },
@@ -276,8 +277,8 @@ def get_pipeline(batch_size: int, skip: int = 0):
 def load_existing_data():
     """Load the most recent CSV file if it exists"""
     # First try exact file if known
-    if os.path.exists('student_scores_20250121_203853.csv'):
-        df = pd.read_csv('student_scores_20250121_203853.csv')
+    if os.path.exists('student_scores_20250122_133404.csv'):
+        df = pd.read_csv('student_scores_20250122_133404.csv')
         # Convert string representations of dictionaries to actual dictionaries
         df['metrics'] = df['metrics'].apply(eval)
         df['scores'] = df['scores'].apply(eval)
@@ -458,7 +459,7 @@ def main():
     # Bonus Score Explanation
     # st.sidebar.subheader("Bonus Score")
     st.sidebar.write("""
-    **Bonus Score (up to 30 points)** in 3 ways:
+    **Bonus Score (up to 15 points)** in 3 ways:
     1. If the student is from IIT or NIT.
     2. If the student has more than 2 projects.
     3. If the student has more than 2 work experiences.
@@ -492,12 +493,12 @@ def main():
     if st.session_state.df is not None:
         # KPI metrics at the top
         st.subheader("📊 **Key Performance Indicators (KPIs)**")
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5,col6 = st.columns(6)
 
         with col1:
             st.markdown("""
                 <div style="border: 2px solid steelblue; padding: 5px; border-radius: 5px;">
-                    <h5 style="text-align: center; color: steelblue;">Total Students</h5>
+                    <h5 style="text-align: center; color: steelblue;">Total Students <br><center>(in database)</center></h5>
                     <h2 style="text-align: center;">{}</h2>
                 </div>
             """.format(len(st.session_state.df)), unsafe_allow_html=True)
@@ -506,7 +507,7 @@ def main():
             avg_score = st.session_state.df['scores'].apply(lambda x: x['total_score']).mean()
             st.markdown("""
                 <div style="border: 2px solid steelblue; padding: 5px;border-radius: 5px;">
-                    <h5 style="text-align: center; color: steelblue;">Average Score</h5>
+                    <h5 style="text-align: center; color: steelblue;">Average Score <br><center>(out of 100)</center></h5>
                     <h2 style="text-align: center;">{:.2f}</h2>
                 </div>
             """.format(avg_score), unsafe_allow_html=True)
@@ -515,7 +516,7 @@ def main():
             top_category = st.session_state.df['scores'].apply(lambda x: x['category']).mode()[0]
             st.markdown("""
                 <div style="border: 2px solid steelblue; padding: 5px; border-radius: 5px;">
-                    <h5 style="text-align: center; color: steelblue;">Top Category</h5>
+                    <h5 style="text-align: center; color: steelblue;">Top Category <br><center>(out of C1-C5)</center></h5>
                     <h2 style="text-align: center;">{}</h2>
                 </div>
             """.format(top_category), unsafe_allow_html=True)
@@ -524,12 +525,30 @@ def main():
             max_score = st.session_state.df['scores'].apply(lambda x: x['total_score']).max()
             st.markdown("""
                 <div style="border: 2px solid steelblue; padding: 5px; border-radius: 5px;">
-                    <h5 style="text-align: center; color: steelblue;">Highest Score</h5>
+                    <h5 style="text-align: center; color: steelblue;">Highest Score <br><center>(out of 115)</center></h5>
                     <h2 style="text-align: center;">{}</h2>
                 </div>
             """.format(max_score), unsafe_allow_html=True)
+            
+        with col5:
+            max_score1 = st.session_state.df['scores'].apply(lambda x: x['base_scores']['base_total']).max()
+            st.markdown("""
+                <div style="border: 2px solid steelblue; padding: 5px; border-radius: 5px;">
+                    <h5 style="text-align: center; color: steelblue;">Max Base Score <br><center>(out of 100)</center></h5>
+                    <h2 style="text-align: center;">{}</h2>
+                </div>
+            """.format(max_score1), unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
+        
+        with col6:
+            max_score2 = st.session_state.df['scores'].apply(lambda x: x['percentage']).max()
+            st.markdown("""
+                <div style="border: 2px solid steelblue; padding: 5px; border-radius: 5px;">
+                    <h5 style="text-align: center; color: steelblue;">Max Percentage <br><center>(out of 100)</center></h5>
+                    <h2 style="text-align: center;">{}</h2>
+                </div>
+            """.format(max_score2), unsafe_allow_html=True)
 
 
         # Display distribution plot
@@ -571,6 +590,7 @@ def main():
                 'Student ID': row['student_id'],
                 'Name': row['full_name'],
                 'Category': scores['category'],
+                'Percentage Score':scores['percentage'],
                 'Total Score': scores['total_score'],
                 'Base Score': scores['base_scores']['base_total'],
                 'Bonus Score': scores['bonus_scores']['bonus_total'],
@@ -600,7 +620,7 @@ def main():
         st.markdown("<hr style='border:1px solid #ccc;'>", unsafe_allow_html=True)
 
         # Enhanced bar chart for average scores by category with different colors
-        st.subheader("📊 **Average Scores by Category**")
+        st.subheader("🏅 **Average Scores by Category**")
         avg_scores_by_category = (
             pd.DataFrame(display_data)
             .groupby('Category')['Total Score']
@@ -637,6 +657,47 @@ def main():
         )
 
         st.plotly_chart(fancy_bar_chart,key="unique_chart_2")
+        
+        st.markdown("<hr style='border:1px solid #ccc;'>", unsafe_allow_html=True)
+
+        # Enhanced bar chart for average scores by category with different colors
+        st.subheader("💯 **Average Percentage by Category**")
+        avg_scores_by_category = (
+            pd.DataFrame(display_data)
+            .groupby('Category')['Percentage Score']
+            .mean()
+            .sort_values(ascending=False)
+        )
+
+        # Assign a unique color for each category
+        colors = px.colors.qualitative.Pastel  # You can choose other color palettes from plotly
+
+        fancy_bar_chart = go.Figure()
+
+        for i, category in enumerate(avg_scores_by_category.index):
+            fancy_bar_chart.add_trace(
+                go.Bar(
+                    x=[category],
+                    y=[avg_scores_by_category[category]],
+                    text=[f"{avg_scores_by_category[category]:.2f}"],
+                    textposition='auto',  # Automatically position text
+                    textfont=dict(size=20),
+                    name=category,
+                    marker=dict(color=colors[i % len(colors)])
+                )
+            )
+
+        fancy_bar_chart.update_layout(
+            title="Average Percentage by Category",
+            xaxis_title="Category",
+            yaxis_title="Average Score",
+            template="plotly_white",
+            plot_bgcolor="rgba(0, 0, 0, 0.02)",
+            legend_title_text=None,
+            showlegend=True  # Hide legend if not necessary
+        )
+
+        st.plotly_chart(fancy_bar_chart,key="unique_chart_3")
 
 
     else:

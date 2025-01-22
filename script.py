@@ -26,7 +26,7 @@ def calculate_score(project_count: int, hard_skills_count: int, work_exp_count: 
     # 1. Projects (25%)
     if project_count >= 2:
         scores['project_score'] = 25
-        bonus_scores['project_bonus'] = 10 if project_count > 2 else 0
+        bonus_scores['project_bonus'] = 5 if project_count > 2 else 0
     elif project_count == 1:
         scores['project_score'] = 15
         bonus_scores['project_bonus'] = 0
@@ -47,7 +47,7 @@ def calculate_score(project_count: int, hard_skills_count: int, work_exp_count: 
     # 3. Work Experience (20%)
     if work_exp_count >= 2:
         scores['work_exp_score'] = 20
-        bonus_scores['work_exp_bonus'] = 10 if work_exp_count > 2 else 0
+        bonus_scores['work_exp_bonus'] = 5 if work_exp_count > 2 else 0
     elif work_exp_count == 1:
         scores['work_exp_score'] = 15
         bonus_scores['work_exp_bonus'] = 0
@@ -88,15 +88,15 @@ def calculate_score(project_count: int, hard_skills_count: int, work_exp_count: 
         scores['cgpa_score'] = 2
     else:
         scores['cgpa_score'] = 0
-    
+   
     # Source bonus
     bonus_scores['source_bonus'] = source_bonus
-    
+   
     # Calculate totals
     scores['base_total'] = sum(scores.values())
     bonus_scores['bonus_total'] = sum(bonus_scores.values())
     total_score = scores['base_total'] + bonus_scores['bonus_total']
-    
+    percentage=round((total_score/115)*100)
     # Determine category
     if total_score >= 100:
         category = "C1"
@@ -108,12 +108,13 @@ def calculate_score(project_count: int, hard_skills_count: int, work_exp_count: 
         category = "C4"
     else:
         category = "C5"
-    
+   
     return {
         'base_scores': scores,
         'bonus_scores': bonus_scores,
         'total_score': total_score,
-        'category': category
+        'category': category,
+        'percentage':percentage
     }
 
 def process_student_chunk(students: List[Dict]) -> List[Dict]:
@@ -130,7 +131,7 @@ def process_student_chunk(students: List[Dict]) -> List[Dict]:
                 student['cgpa'],
                 student['source_bonus']
             )
-            
+          
             results.append({
                 'student_id': student['_id'],
                 'full_name': student['full_name'],
@@ -147,7 +148,7 @@ def process_student_chunk(students: List[Dict]) -> List[Dict]:
             })
         except Exception as e:
             logger.error(f"Error processing student {student.get('_id', 'unknown')}: {str(e)}")
-    
+   
     return results
 
 def get_pipeline(batch_size: int, skip: int = 0):
@@ -194,7 +195,7 @@ def get_pipeline(batch_size: int, skip: int = 0):
                 "source_bonus": {
                     "$cond": [
                         {"$eq": ["$source", "coresignal"]},
-                        10,
+                        5,
                         0
                     ]
                 },
